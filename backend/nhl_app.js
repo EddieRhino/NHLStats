@@ -19,7 +19,7 @@ async function getGameIDs(schedule){
 
 async function getBoxscore(gameID){
     try {
-        const resp = await axios.get("https://api-web.nhle.com/v1/gamecenter/${gameId}/boxscore")
+        const resp = await axios.get(`https://api-web.nhle.com/v1/gamecenter/${gameID}/boxscore`)
         return resp.data
     }
     catch (error){
@@ -40,60 +40,75 @@ async function insertSkaterStats(gameId, data){
         ...data.playerByGameStats.awayTeam.forwards,
         ...data.playerByGameStats.awayTeam.defense
     ]
-    for(const player in skaters){
+    for(const player of skaters){
         await client.query(
             `INSERT INTO g_stats_skater
             (playerid, gameid, goals, assists, shots, toi)
             VALUES ($1, $2, $3, $4, $5, $6)
-            ON CONFLICT (playerid, gameid) DO NOTHING`
-        )
+            ON CONFLICT (playerid, gameid) DO NOTHING`,
         [
             player.playerId,
             gameId,
             player.goals || 0,
             player.assists || 0,
-            player.shots || 0,
-            toiToSeconds(player.toi)
+            player.sog || 0,
+            toiToSeconds(player.toi) || 0
         ]
+        )
     }
 }
 
-async function insertGoalieStats(data, gameId){
+async function insertGoalieStats(gameId,data){
     const goalies = [
         ...data.playerByGameStats.homeTeam.goalies,
         ...data.playerByGameStats.awayTeam.goalies
     ]
 
-    for(const player in goalies){
+    for(const player of goalies){
         await client.query(
             `INSERT INTO g_stats_goalie
-            (playerid, gameid, shots_faced, saves, gsax)
-            VALUES ($1, $2, $3, $4, $5)
-            ON CONFLICT (playerid, gameid) DO NOTHING`
-        )
+            (playerid, gameid, shots_faced, saves)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (playerid, gameid) DO NOTHING`,
         [
             player.playerId,
             gameId,
-            player.shots_faced || 0,
-            player.saves || 0,
-            player.gsax || 0
+            player.shotsAgainst || 0,
+            player.saves || 0
         ]
+        )
     }
 }
 
 async function ingestStats(){
-    const schedule = await getTodaysGames()
-    if (!schedule) return
+    const schedule = await getTodaysGames();
+    if (schedule === null) return;
 
-    const today = new Date().toDateString()
+    const todaysGames = []
+    const today = new Date().toDateString();
 
-    const todaysGames = schedule.gameWeek
-        .flatMap(day => day.games)
-        .filter(game => new Date(game.gameDate.toDateString() === today))
-    
+    schedule.gameWeek.forEach(day => {
+        day.games.forEach(game => {
+            const gameDate = new Date(game.startTimeUTC).toDateString();
+
+            if (today === gameDate) {
+                todaysGames.push({
+                    gameId: game.id,
+                });
+            }
+        });
+    });
+    for (const game of todaysGames){
+        const box = await getBoxscore(game.gameId)
+        if(!box) continue
+
+        await insertSkaterStats(game.gameId,box)
+        await insertGoalieStats(game.gameId,box)
+    }
+
+    client.end()
+
 }
-
-
 
 
 
@@ -136,3 +151,5 @@ async function printTodaysGames() {
     }
 }
 
+printTodaysGames()
+ingestStats()
