@@ -9,5 +9,6 @@ const client = new Client({
 })
 
 client.connect()
+.then(() => console.log("Connected to DB"))
 
 module.exports = client
