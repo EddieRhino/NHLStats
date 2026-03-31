@@ -32,7 +32,15 @@ app.get("/api/skaters/:gameId", async(req,res) => {
     }
 })
 
-app.get("/test", (req, res) => {
-    console.log("TEST HIT");
-    res.send("Server works");
+app.get("/api/games/today", async(req,res) => {
+    try{
+        const today = new Date().toDateString()
+        const result = await client.query(
+            `SELECT `
+        )
+    }
+    catch (err){
+        console.error("bad fetch of todays games")
+        res.status(500).json({error: "Failure"})
+    }
 })

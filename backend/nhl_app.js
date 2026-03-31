@@ -34,6 +34,9 @@ function toiToSeconds(toi){
 }
 
 async function insertSkaterStats(gameId, data){
+    if (!data?.playerByGameStats?.homeTeam) {
+        return
+    }
     const skaters = [
         ...data.playerByGameStats.homeTeam.forwards,
         ...data.playerByGameStats.homeTeam.defense,
@@ -59,6 +62,9 @@ async function insertSkaterStats(gameId, data){
 }
 
 async function insertGoalieStats(gameId,data){
+    if (!data?.playerByGameStats?.homeTeam?.goalies) {
+        return
+    }
     const goalies = [
         ...data.playerByGameStats.homeTeam.goalies,
         ...data.playerByGameStats.awayTeam.goalies
@@ -80,12 +86,16 @@ async function insertGoalieStats(gameId,data){
     }
 }
 
+async function insertTodaysGames(data){
+
+}
+
 async function ingestStats(){
-    const schedule = await getTodaysGames();
+    const schedule = await getTodaysGames()
     if (schedule === null) return;
 
     const todaysGames = []
-    const today = new Date().toDateString();
+    const today = new Date().toDateString()
 
     schedule.gameWeek.forEach(day => {
         day.games.forEach(game => {
