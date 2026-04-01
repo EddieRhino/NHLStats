@@ -1,14 +1,12 @@
-const { Client } = require("pg")
+import { Pool } from "pg"
+import dotenv from "dotenv"
 
-const client = new Client({
-    user: "eddiereinhardt",
-    host: "localhost",
-    database: "nhl",
-    password: "",
-    port: 5432, //port for postgreSQL
+dotenv.config()
+
+export const pool = new Pool({
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT || 5432,
 })
-
-client.connect()
-.then(() => console.log("Connected to DB"))
-
-module.exports = client

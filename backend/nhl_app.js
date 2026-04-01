@@ -1,7 +1,7 @@
-const axios = require("axios");
-const client = require("./db")
+import axios from "axios"
+import { pool } from "./db.js"
 
-async function getTodaysGames() {
+export async function getTodaysGames() {
     try {
         const resp = await axios.get("https://api-web.nhle.com/v1/schedule/now");
         return resp.data;
@@ -17,7 +17,7 @@ async function getGameIDs(schedule){
         .map(game => game.id)
 }
 
-async function getBoxscore(gameID){
+export async function getBoxscore(gameID){
     try {
         const resp = await axios.get(`https://api-web.nhle.com/v1/gamecenter/${gameID}/boxscore`)
         return resp.data
@@ -44,7 +44,7 @@ async function insertSkaterStats(gameId, data){
         ...data.playerByGameStats.awayTeam.defense
     ]
     for(const player of skaters){
-        await client.query(
+        await pool.query(
             `INSERT INTO g_stats_skater
             (playerid, gameid, goals, assists, shots, toi)
             VALUES ($1, $2, $3, $4, $5, $6)
@@ -71,7 +71,7 @@ async function insertGoalieStats(gameId,data){
     ]
 
     for(const player of goalies){
-        await client.query(
+        await pool.query(
             `INSERT INTO g_stats_goalie
             (playerid, gameid, shots_faced, saves)
             VALUES ($1, $2, $3, $4)
@@ -86,7 +86,7 @@ async function insertGoalieStats(gameId,data){
     }
 }
 
-async function insertGame(game,box){
+export async function insertGame(game,box){
     const homeTeam = box?.homeTeam?.abbrev
     const awayTeam = box?.awayTeam?.abbrev
 
@@ -97,7 +97,7 @@ async function insertGame(game,box){
 
     console.log(dateGame)
 
-    await client.query(
+    await pool.query(
         `INSERT INTO games
         (gameid, time, hometeam, awayteam, homescore, awayscore)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -144,8 +144,6 @@ async function ingestStats(){
         await insertSkaterStats(game.id,box)
         await insertGoalieStats(game.id,box)
     }
-
-    client.end()
 
 }
 
