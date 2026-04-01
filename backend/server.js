@@ -22,8 +22,21 @@ app.get("/api/skaters/:gameId", async(req,res) => {
 
         const result = await pool.query(
             `SELECT playerid, goals, assists, shots, toi
-            FROM g_stats_skater
+            FROM reg_stats_skater
             WHERE gameid = $1
+
+            UNION ALL
+
+            SELECT playerid, goals, assists, shots, toi
+            FROM pre_stats_skater
+            WHERE gameid = $1
+
+            UNION ALL
+
+            SELECT playerid, goals, assists, shots, toi
+            FROM post_stats_skater
+            WHERE gameid = $1
+
             ORDER BY goals DESC, assists DESC`,
             [gameId]
         )
