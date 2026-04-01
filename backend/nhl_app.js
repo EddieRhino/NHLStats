@@ -86,7 +86,36 @@ async function insertGoalieStats(gameId,data){
     }
 }
 
-async function insertTodaysGames(data){
+async function insertGame(game,box){
+    const homeTeam = box?.homeTeam?.abbrev
+    const awayTeam = box?.awayTeam?.abbrev
+
+    const homeScore = box?.liveData?.linescore?.teams?.home?.goals ?? 0
+    const awayScore = box?.liveData?.linescore?.teams?.away?.goals ?? 0
+
+    const dateGame = new Date(game.startTimeUTC)
+
+    console.log(dateGame)
+
+    await client.query(
+        `INSERT INTO games
+        (gameid, time, hometeam, awayteam, homescore, awayscore)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (gameid)
+        DO UPDATE SET
+        homescore = EXCLUDED.homescore,
+        awayscore = EXCLUDED.awayscore
+        WHERE games.homescore IS DISTINCT FROM EXCLUDED.homescore
+            OR games.awayscore IS DISTINCT FROM EXCLUDED.awayscore`,
+        [
+            game.id,
+            dateGame,
+            homeTeam,
+            awayTeam,
+            homeScore,
+            awayScore
+        ]
+    )
 
 }
 
@@ -99,21 +128,21 @@ async function ingestStats(){
 
     schedule.gameWeek.forEach(day => {
         day.games.forEach(game => {
-            const gameDate = new Date(game.startTimeUTC).toDateString();
+            const gameDate = new Date(game.startTimeUTC).toDateString()
 
             if (today === gameDate) {
-                todaysGames.push({
-                    gameId: game.id,
-                });
+                todaysGames.push(game)
             }
         });
-    });
+    })
     for (const game of todaysGames){
-        const box = await getBoxscore(game.gameId)
+        const box = await getBoxscore(game.id)
         if(!box) continue
+    
+        await insertGame(game,box)
 
-        await insertSkaterStats(game.gameId,box)
-        await insertGoalieStats(game.gameId,box)
+        await insertSkaterStats(game.id,box)
+        await insertGoalieStats(game.id,box)
     }
 
     client.end()
@@ -136,7 +165,7 @@ async function printTodaysGames() {
 
     schedule.gameWeek.forEach(day => {
         day.games.forEach(game => {
-            const gameDate = new Date(game.startTimeUTC).toDateString();
+            const gameDate = new Date(game.startTimeUTC).toDateString()
 
             if (today === gameDate) {
                 todaysGames.push({
@@ -144,22 +173,22 @@ async function printTodaysGames() {
                     homeTeam: game.homeTeam.abbrev,
                     awayTeam: game.awayTeam.abbrev,
                     startTime: game.startTimeUTC
-                });
+                })
             }
-        });
-    });
+        })
+    })
 
     if (todaysGames.length === 0) {
-        console.log("No games today!");
+        console.log("No games today!")
     } else {
-        console.log("Today's Games:");
+        console.log("Today's Games:")
         todaysGames.forEach(game => {
             const localTime = new Date(game.startTime).toLocaleString()
 
-            console.log(`${game.awayTeam} @ ${game.homeTeam} | Start: ${localTime}`);
-        });
+            console.log(`${game.awayTeam} @ ${game.homeTeam} | Start: ${localTime}`)
+        })
     }
 }
 
-printTodaysGames()
+//printTodaysGames()
 ingestStats()
