@@ -1,6 +1,7 @@
 import axios from "axios"
 import { pool } from "./db.js"
 
+
 /**
  * Gets all the games being played today.
  * @returns {array} The data of all the games being played today.
@@ -116,31 +117,41 @@ async function insertGoalieStats(gameId,data){
 }
 
 /**
- * Adds a regular season game to the database
+ * Adds a game to the database
  * @param {array} The game being added to the SQL database
  * @param {array} The boxscore of the game
  */
-export async function insertRegGame(game,box){
+export async function insertGame(game,box){
     const homeTeam = box?.homeTeam?.abbrev
     const awayTeam = box?.awayTeam?.abbrev
 
     const homeScore = box?.homeTeam?.score ?? 0
     const awayScore = box?.awayTeam?.score ?? 0
 
-    //console.log(box)
+    const gameNum = game.gameType
+    let gameType = ""
 
+    if(gameNum == 1){
+        gameType = "pre_games"
+    }
+    else if(gameNum == 2){
+        gameType = "reg_games"
+    }
+    else{
+        gameType = "post_games"
+    }
+    //console.log(game)
     const dateGame = new Date(game.startTimeUTC)
+    //console.log(dateGame)
 
     await pool.query(
-        `INSERT INTO reg_games
+        `INSERT INTO ${gameType}
         (gameid, time, hometeam, awayteam, homescore, awayscore)
         VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT (gameid)
         DO UPDATE SET
         homescore = EXCLUDED.homescore,
-        awayscore = EXCLUDED.awayscore
-        WHERE reg_games.homescore IS DISTINCT FROM EXCLUDED.homescore
-            OR reg_games.awayscore IS DISTINCT FROM EXCLUDED.awayscore`,
+        awayscore = EXCLUDED.awayscore`,
         [
             game.id,
             dateGame,
@@ -151,42 +162,49 @@ export async function insertRegGame(game,box){
         ]
     )
 }
+export async function importGameNoBox(game){
+
+    const gameNum = game.gameType
+    let gameType = ""
+
+    if(gameNum == 1){
+        gameType = "pre_games"
+    }
+    else if(gameNum == 2){
+        gameType = "reg_games"
+    }
+    else{
+        gameType = "post_games"
+    }
+    //console.log(game)
+    const dateGame = new Date(game.startTimeUTC)
+    //console.log(dateGame)
+
+    await pool.query(
+        `INSERT INTO ${gameType}
+        (gameid, time, hometeam, awayteam, homescore, awayscore)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (gameid)
+        DO UPDATE SET
+        homescore = EXCLUDED.homescore,
+        awayscore = EXCLUDED.awayscore`,
+        [
+            game.id,
+            dateGame,
+            game.homeTeam,
+            game.awayTeam,
+            game.homeScore || 0,
+            game.awayScore || 0
+        ]
+    )
+}
+
 
 /**
  * Adds a regular season game to the database
  * @param {array} The game being added to the SQL database
  * @param {array} The boxscore of the game
  */
-export async function insertPreGame(game,box){
-    const homeTeam = box?.homeTeam?.abbrev
-    const awayTeam = box?.awayTeam?.abbrev
-
-    const homeScore = box?.liveData?.linescore?.teams?.home?.goals ?? 0
-    const awayScore = box?.liveData?.linescore?.teams?.away?.goals ?? 0
-
-    const dateGame = new Date(game.startTimeUTC)
-
-    await pool.query(
-        `INSERT INTO pre_games
-        (gameid, time, hometeam, awayteam, homescore, awayscore)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        ON CONFLICT (gameid)
-        DO UPDATE SET
-        homescore = EXCLUDED.homescore,
-        awayscore = EXCLUDED.awayscore
-        WHERE pre_games.homescore IS DISTINCT FROM EXCLUDED.homescore
-            OR pre_games.awayscore IS DISTINCT FROM EXCLUDED.awayscore`,
-        [
-            game.id,
-            dateGame,
-            homeTeam,
-            awayTeam,
-            homeScore,
-            awayScore
-        ]
-    )
-
-}
 
 /**
  * Adds the stats from today's NHL games to the SQL database.
@@ -211,7 +229,7 @@ async function ingestStats(){
         const box = await getBoxscore(game.id)
         if(!box) continue
     
-        await insertRegGame(game,box)
+        await insertGame(game,box)
 
         await insertSkaterStats(game.id,box)
         await insertGoalieStats(game.id,box)
@@ -269,16 +287,30 @@ async function printTodaysGames() {
  */
 export async function getFullSeason(season){
     try{
-        const resp = await axios.get(`https://api-web.nhle.com/v1/schedule?startDate=${season}-09-01&endDate=${season+1}-06-30`)
-        const data = resp.data
-
-        
+        const year = season.toString().substring(0,4)
+        const resp = await axios.get(`https://api-web.nhle.com/v1/standings/${year}-12-01`)
+        const teams = resp.data.standings
+            .flatMap(team => team.teamAbbrev.default)
+        const games = []
+        for(const team of teams){
+            let response = await axios.get(`https://api-web.nhle.com/v1/club-schedule-season/${team}/${season}`)
+            // console.log(response.data.games
+            //     .flatMap(game => game.homeTeam)
+            //     .flatMap(team => team.abbrev)  
+            // )
+            games.push(...response.data.games)
+       }
+       return games
+       
     }
-    catch (error) {
-        console.error("Error", error);
+    catch (err) {
+        console.error(err.response?.status)
+        console.error(err.response?.data)
+        console.error(err.message)
         return null;
     }
 }
 
 //printTodaysGames()
-ingestStats()
+//ingestStats()
+getFullSeason(20212022)

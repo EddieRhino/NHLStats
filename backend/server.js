@@ -2,7 +2,7 @@ import express from "express"
 const app = express()
 const PORT = 3000
 import {getTodaysGames} from "./nhl_app.js"
-import {insertRegGame} from "./nhl_app.js"
+import {insertGame} from "./nhl_app.js"
 import {getBoxscore} from "./nhl_app.js"
 import { pool } from "./db.js"
 
@@ -71,7 +71,7 @@ app.get("/api/games/today", async(req,res) => {
                 todaysGames.push(game)
                 const box = await getBoxscore(game.id)
                 if (!box) continue
-                await insertRegGame(game,box)
+                await insertGame(game,box)
             }
         }
         return res.json(todaysGames)
