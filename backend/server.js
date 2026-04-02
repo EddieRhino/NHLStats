@@ -2,7 +2,7 @@ import express from "express"
 const app = express()
 const PORT = 3000
 import {getTodaysGames} from "./nhl_app.js"
-import {insertGame} from "./nhl_app.js"
+import {insertRegGame} from "./nhl_app.js"
 import {getBoxscore} from "./nhl_app.js"
 import { pool } from "./db.js"
 
@@ -52,7 +52,7 @@ app.get("/api/games/today", async(req,res) => {
     try{
         const result_db = await pool.query(
             `SELECT *
-            FROM games
+            FROM reg_games
             WHERE DATE(time) = CURRENT_DATE`
         )
         if(result_db.rows.length > 0){
@@ -71,7 +71,7 @@ app.get("/api/games/today", async(req,res) => {
                 todaysGames.push(game)
                 const box = await getBoxscore(game.id)
                 if (!box) continue
-                await insertGame(game,box)
+                await insertRegGame(game,box)
             }
         }
         return res.json(todaysGames)

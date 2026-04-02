@@ -124,8 +124,10 @@ export async function insertRegGame(game,box){
     const homeTeam = box?.homeTeam?.abbrev
     const awayTeam = box?.awayTeam?.abbrev
 
-    const homeScore = box?.liveData?.linescore?.teams?.home?.goals ?? 0
-    const awayScore = box?.liveData?.linescore?.teams?.away?.goals ?? 0
+    const homeScore = box?.homeTeam?.score ?? 0
+    const awayScore = box?.awayTeam?.score ?? 0
+
+    //console.log(box)
 
     const dateGame = new Date(game.startTimeUTC)
 
@@ -209,7 +211,7 @@ async function ingestStats(){
         const box = await getBoxscore(game.id)
         if(!box) continue
     
-        await insertGame(game,box)
+        await insertRegGame(game,box)
 
         await insertSkaterStats(game.id,box)
         await insertGoalieStats(game.id,box)
@@ -279,4 +281,4 @@ export async function getFullSeason(season){
 }
 
 //printTodaysGames()
-//ingestStats()
+ingestStats()
