@@ -1,8 +1,4 @@
-CREATE TABLE all_games(
-    gameid bigint primary key,
-    time timestamptz,
-    hometeam varchar(255),
-    awayteam varchar(255),
-    homescore int,
-    awayscore int
-);
+select * from reg_games
+where gameid::text like '2024%'
+order by time asc
+limit 100;
