@@ -1,4 +1,6 @@
 select * from reg_games
-where gameid::text like '2024%'
-order by time asc
-limit 100;
+where hometeam like 'MIN'
+UNION
+select * from reg_games
+where awayteam like 'MIN'
+order by time asc;

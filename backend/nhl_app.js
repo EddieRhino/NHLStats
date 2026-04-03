@@ -199,6 +199,11 @@ export async function importGameNoBox(game){
     )
 }
 
+export async function importTodaysGames(){
+    const games = await getTodaysGames()
+
+}
+
 
 /**
  * Adds a regular season game to the database
@@ -215,6 +220,8 @@ async function ingestStats(){
 
     const todaysGames = []
     const today = new Date().toDateString()
+    // const yesterday = new Date()
+    // yesterday.setDate(today.getDate() - 1)
 
     schedule.gameWeek.forEach(day => {
         day.games.forEach(game => {
@@ -310,7 +317,3 @@ export async function getFullSeason(season){
         return null;
     }
 }
-
-//printTodaysGames()
-//ingestStats()
-getFullSeason(20212022)

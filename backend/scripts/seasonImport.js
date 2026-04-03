@@ -12,7 +12,6 @@ async function importSeason(season){
             homeScore: game.homeTeam.score ?? 0,
             awayScore: game.awayTeam.score ?? 0
         }))
-    console.log(mapGames)
     
     for(const game of mapGames){
         importGameNoBox(game)

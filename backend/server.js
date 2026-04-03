@@ -5,6 +5,7 @@ import {getTodaysGames} from "./nhl_app.js"
 import {insertGame} from "./nhl_app.js"
 import {getBoxscore} from "./nhl_app.js"
 import { pool } from "./db.js"
+import { startCron } from "./cron.js"
 
 app.use(express.json())
 
@@ -81,3 +82,4 @@ app.get("/api/games/today", async(req,res) => {
         res.status(500).json({error: "Failure"})
     }
 })
+startCron()
