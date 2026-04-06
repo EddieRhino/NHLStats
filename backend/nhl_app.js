@@ -16,6 +16,16 @@ export async function getTodaysGames() {
     }
 }
 
+export async function getGamesFromDate(date){
+    try {
+        const resp = await axios.get(`https://api-web.nhle.com/v1/schedule/${date}`);
+        return resp.data;
+    } catch (error) {
+        console.error("Error", error);
+        return null;
+    }
+}
+
 /**
  * Gets all the game IDs being played today.
  * @param {array} The schedule of the games, returned from getTodaysGames()
@@ -49,19 +59,35 @@ export async function getBoxscore(gameID){
  * @returns {number} The time on ice of a player in seconds
  */
 function toiToSeconds(toi){
+    if(toi === undefined){
+        return 0
+    }
     const [min,sec] = toi.split(":").map(Number)
     return min * 60 + sec
 }
 
 /**
  * Adds all skater stats to the SQL database from the game
- * @param {number} The game ID of the requested game
+ * @param {number} The game object of the requested game
  * @param {array} The boxscore of the game
  */
-async function insertSkaterStats(gameId, data){
+export async function insertSkaterStats(game, data){
     if (!data?.playerByGameStats?.homeTeam) {
         return
     }
+    const gameNum = game.gameType
+    let gameType = ""
+
+    if(gameNum == 1){
+        gameType = "pre_stats_skater"
+    }
+    else if(gameNum == 2){
+        gameType = "reg_stats_skater"
+    }
+    else{
+        gameType = "post_stats_skater"
+    }
+
     const skaters = [
         ...data.playerByGameStats.homeTeam.forwards,
         ...data.playerByGameStats.homeTeam.defense,
@@ -70,13 +96,13 @@ async function insertSkaterStats(gameId, data){
     ]
     for(const player of skaters){
         await pool.query(
-            `INSERT INTO reg_stats_skater
+            `INSERT INTO ${gameType}
             (playerid, gameid, goals, assists, shots, toi)
             VALUES ($1, $2, $3, $4, $5, $6)
             ON CONFLICT (playerid, gameid) DO NOTHING`,
         [
             player.playerId,
-            gameId,
+            game.id,
             player.goals || 0,
             player.assists || 0,
             player.sog || 0,
@@ -88,13 +114,27 @@ async function insertSkaterStats(gameId, data){
 
 /**
  * Adds all goalie stats to the SQL database from the game
- * @param {number} The game ID of the requested game
+ * @param {number} The game object of the requested game
  * @param {array} The boxscore of the game
  */
-async function insertGoalieStats(gameId,data){
+export async function insertGoalieStats(game,data){
     if (!data?.playerByGameStats?.homeTeam?.goalies) {
         return
     }
+
+    const gameNum = game.gameType
+    let gameType = ""
+
+    if(gameNum == 1){
+        gameType = "pre_stats_goalie"
+    }
+    else if(gameNum == 2){
+        gameType = "reg_stats_goalie"
+    }
+    else{
+        gameType = "post_stats_goalie"
+    }
+
     const goalies = [
         ...data.playerByGameStats.homeTeam.goalies,
         ...data.playerByGameStats.awayTeam.goalies
@@ -102,13 +142,13 @@ async function insertGoalieStats(gameId,data){
 
     for(const player of goalies){
         await pool.query(
-            `INSERT INTO reg_stats_goalie
+            `INSERT INTO ${gameType}
             (playerid, gameid, shots_faced, saves)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (playerid, gameid) DO NOTHING`,
         [
             player.playerId,
-            gameId,
+            game.id,
             player.shotsAgainst || 0,
             player.saves || 0
         ]
@@ -178,7 +218,6 @@ export async function importGameNoBox(game){
     }
     //console.log(game)
     const dateGame = new Date(game.startTimeUTC)
-    //console.log(dateGame)
 
     await pool.query(
         `INSERT INTO ${gameType}
@@ -197,11 +236,6 @@ export async function importGameNoBox(game){
             game.awayScore || 0
         ]
     )
-}
-
-export async function importTodaysGames(){
-    const games = await getTodaysGames()
-
 }
 
 
@@ -238,8 +272,8 @@ async function ingestStats(){
     
         await insertGame(game,box)
 
-        await insertSkaterStats(game.id,box)
-        await insertGoalieStats(game.id,box)
+        await insertSkaterStats(game,box)
+        await insertGoalieStats(game,box)
     }
  
 }

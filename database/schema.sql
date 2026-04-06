@@ -1,6 +1,7 @@
-select * from reg_games
-where hometeam like 'MIN'
-UNION
-select * from reg_games
-where awayteam like 'MIN'
-order by time asc;
+CREATE TABLE pre_stats_goalie (
+    playerid BIGINT NOT NULL,
+    gameid   BIGINT NOT NULL,
+    shots_faced INTEGER,
+    saves INTEGER,
+    CONSTRAINT preg_stats_goalie_pkey PRIMARY KEY (playerid, gameid)
+);
