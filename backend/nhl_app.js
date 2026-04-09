@@ -278,6 +278,18 @@ async function ingestStats(){
  
 }
 
+export async function getStandings(date = null){
+    let formattedDate
+    if (!date || !date.date) {
+        formattedDate = "now"
+    }
+    else{
+        formattedDate = date.date
+    }
+    const res = await axios.get(`https://api-web.nhle.com/v1/standings/${formattedDate}`)
+    return res.data
+}
+
 
 
 
@@ -352,6 +364,11 @@ export async function getFullSeason(season){
     }
 }
 
+/**
+ * Gets all the games from the past 7 days including the inputted date
+ * @param {string} The date (YYYY-MM-DD) of the requested games
+ * @returns {array} All the game objects from the requested week (including preseason, regular season, playoffs)
+ */
 export async function getPastWeek(date){
     try{
         const games = await getGamesFromDate(date)
@@ -366,7 +383,6 @@ export async function getPastWeek(date){
                 homeScore: game.homeTeam.score ?? 0,
                 awayScore: game.awayTeam.score ?? 0
             }))
-        //console.log(games)
         
         return games2
     }
@@ -377,3 +393,4 @@ export async function getPastWeek(date){
         return null;
     }
 }
+

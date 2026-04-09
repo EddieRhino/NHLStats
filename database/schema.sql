@@ -1,7 +1,11 @@
-CREATE TABLE pre_stats_goalie (
-    playerid BIGINT NOT NULL,
-    gameid   BIGINT NOT NULL,
-    shots_faced INTEGER,
-    saves INTEGER,
-    CONSTRAINT preg_stats_goalie_pkey PRIMARY KEY (playerid, gameid)
+create table players(
+    playerid serial PRIMARY KEY,
+    apiid integer unique,
+    name text not null,
+    team text,
+    position text,
+    shoots VARCHAR(1),
+    height_cm INTEGER,
+    weight_lbs INTEGER,
+    birth_date DATE
 );

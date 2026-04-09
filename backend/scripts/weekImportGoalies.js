@@ -8,7 +8,6 @@ async function importWeekGoalieStats(){
     for(const game of games){
         const box = await getBoxscore(game.id)
         if(!box) continue
-        console.log(game)
         await insertGoalieStats(game,box)
     }
 }
