@@ -351,3 +351,29 @@ export async function getFullSeason(season){
         return null;
     }
 }
+
+export async function getPastWeek(date){
+    try{
+        const games = await getGamesFromDate(date)
+        const games2 = games.gameWeek
+            .flatMap(day => day.games)
+            .map(game => ({
+                id: game.id,
+                gameType: game.gameType,
+                startTimeUTC: game.startTimeUTC,
+                homeTeam: game.homeTeam.abbrev,
+                awayTeam:game.awayTeam.abbrev,
+                homeScore: game.homeTeam.score ?? 0,
+                awayScore: game.awayTeam.score ?? 0
+            }))
+        //console.log(games)
+        
+        return games2
+    }
+    catch (err) {
+        console.error(err.response?.status)
+        console.error(err.response?.data)
+        console.error(err.message)
+        return null;
+    }
+}

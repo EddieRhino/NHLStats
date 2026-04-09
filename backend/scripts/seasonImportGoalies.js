@@ -5,7 +5,7 @@ async function importSeasonGoalieStats(season){
     for(const game of games){
         const box = await getBoxscore(game.id)
         if(!box) continue
-        console.log(game.id)
+        //console.log(game.id)
         await insertGoalieStats(game,box)
     }
 }
