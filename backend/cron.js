@@ -1,9 +1,10 @@
 import cron from 'node-cron'
-import { getGamesFromDate, importGameNoBox } from './nhl_app.js'
+import { getBoxscore, getGamesFromDate, importGameNoBox, insertGoalieStats, insertSkaterStats } from './nhl_app.js'
 import { getTodaysGames } from './nhl_app.js'
 
 export function startCron(){
     cron.schedule('0 9 * * *', async () => {
+        console.log("printing")
         let yesterday = new Date()
         yesterday.setDate(yesterday.getDate()-1)
         const yestISO = yesterday.toISOString().split('T')[0]
@@ -40,6 +41,10 @@ export function startCron(){
         )
         for(const game of yestGames){
             importGameNoBox(game)
+            const box = getBoxscore(game)
+            if(!box) continue
+            insertSkaterStats(game,box)
+            insertGoalieStats(game,box)
         }
     })
 }

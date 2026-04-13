@@ -16,6 +16,11 @@ export async function getTodaysGames() {
     }
 }
 
+/**
+ * Gets all the games being played on an inputted date.
+ * @param {string} The requested date in YYYY-MM-DD
+ * @returns {array} The data of all the games being played on that day.
+ */
 export async function getGamesFromDate(date){
     try {
         const resp = await axios.get(`https://api-web.nhle.com/v1/schedule/${date}`);
@@ -202,6 +207,11 @@ export async function insertGame(game,box){
         ]
     )
 }
+
+/**
+ * Adds a game to the database from just the game object
+ * @param {array} The game being added to the SQL database
+ */
 export async function importGameNoBox(game){
 
     const gameNum = game.gameType
@@ -238,13 +248,6 @@ export async function importGameNoBox(game){
     )
 }
 
-
-/**
- * Adds a regular season game to the database
- * @param {array} The game being added to the SQL database
- * @param {array} The boxscore of the game
- */
-
 /**
  * Adds the stats from today's NHL games to the SQL database.
  */
@@ -278,6 +281,10 @@ async function ingestStats(){
  
 }
 
+/**
+ * Gets the current league standings at the inputted date. Defaults to current standings
+ * @param {string} The requested date as YYYY-MM-DD (Optional)
+ */
 export async function getStandings(date = null){
     let formattedDate
     if (!date || !date.date) {
@@ -335,7 +342,7 @@ async function printTodaysGames() {
 
 /**
  * Gets all the games from the requested season
- * @param {number} The year of the season to get, returns season that started in that year, 2025 returns 2025-26 season.
+ * @param {number} The year of the season to get, returns season that started in that year, 20252026 returns 2025-26 season.
  * @returns {array} All the game objects from the requested year (including preseason, regular season, playoffs)
  */
 export async function getFullSeason(season){

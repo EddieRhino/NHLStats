@@ -1,11 +1,17 @@
 import express from "express"
 const app = express()
-const PORT = 3000
+const PORT = 5000
 import {getGamesFromDate, getStandings, getTodaysGames} from "./nhl_app.js"
 import {insertGame} from "./nhl_app.js"
 import {getBoxscore} from "./nhl_app.js"
 import { pool } from "./db.js"
 import { startCron } from "./cron.js"
+import cors from "cors";
+
+
+app.use(cors({
+    origin: "http://localhost:3000"
+}))
 
 app.use(express.json())
 
@@ -54,7 +60,8 @@ app.get(["/api/games","/api/schedule"], async(req,res) => {
         const result_db = await pool.query(
             `SELECT *
             FROM reg_games
-            WHERE DATE(time) = CURRENT_DATE`
+            WHERE DATE(time) = CURRENT_DATE
+            order BY time ASC`
         )
         if(result_db.rows.length > 0){
             return res.json(result_db.rows)
@@ -75,7 +82,15 @@ app.get(["/api/games","/api/schedule"], async(req,res) => {
                 await insertGame(game,box)
             }
         }
-        return res.json(todaysGames)
+
+        const result_db2 = await pool.query(
+            `SELECT *
+            FROM reg_games
+            WHERE DATE(time) = CURRENT_DATE
+            order BY time ASC`
+        )
+        
+        return res.json(result_db2.rows)
     }
     catch (err){
         console.error("bad fetch of todays games",err)
@@ -120,7 +135,7 @@ app.get(["/api/games/:date","/api/schedule/:date"], async(req,res) => {
 
 app.get("/api/standings", async (req, res) => {
     try {
-      const data = await getStandings(date)
+      const data = await getStandings()
       res.json(data)
     } catch (err) {
       console.error(err)
