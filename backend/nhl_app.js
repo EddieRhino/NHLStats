@@ -30,7 +30,6 @@ export async function getTodaysBoxes(){
         const data = resp.data
         const games = data.gameWeek.find(day => day.date === today)
         const boxes = []
-        console.log(games)
         for(const game of games.games){
             const box = await getBoxscore(game.id)
             if(!box) continue
@@ -377,7 +376,7 @@ export async function updateTodaysGames(){
             ]
         )
     }
-    return liveGames
+    return false
 }
 
 /**

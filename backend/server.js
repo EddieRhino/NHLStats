@@ -58,7 +58,8 @@ app.get("/api/skaters/:gameId", async(req,res) => {
 app.get(["/api/games","/api/schedule"], async(req,res) => {
     //Maybe implement later something that only goes to the API if games are active (current time > time of a game) otherwise just go to the database
     try{
-        if(updateTodaysGames()){
+        const live = await updateTodaysGames()
+        if(live){
             return res.json({
                 islive: true,
                 games: await getTodaysBoxes()
@@ -72,7 +73,10 @@ app.get(["/api/games","/api/schedule"], async(req,res) => {
                 order BY time ASC`
             )
             if(result_db.rows.length > 0){
-                return res.json(result_db.rows)
+                return res.json({
+                    islive: false,
+                    games: result_db.rows
+                })
             }
             else{
                 return res.json([])
