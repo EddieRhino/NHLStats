@@ -1,4 +1,4 @@
-import { getPastWeek, importGameNoBox } from "../nhl_app.js"
+import { getBoxscore, getPastWeek, importGameNoBox, insertGame } from "../nhl_app.js"
 
 async function importPastWeek(){
     let date = new Date()
@@ -7,7 +7,13 @@ async function importPastWeek(){
     const games = await getPastWeek(impDate)
     for(const game of games){
         //console.log(game)
-        importGameNoBox(game)
+        const box = await getBoxscore(game.id)
+        if(!box){
+            importGameNoBox(game)
+        }
+        else{
+            insertGame(game,box)
+        }
     }
 }
 importPastWeek()

@@ -8,8 +8,35 @@ import { pool } from "./db.js"
  */
 export async function getTodaysGames() {
     try {
+        const today = new Date().toISOString().split('T')[0];
         const resp = await axios.get("https://api-web.nhle.com/v1/schedule/now");
-        return resp.data;
+        const data = resp.data
+        const games = data.gameWeek.find(day => day.date === today);
+        return games.games 
+    } catch (error) {
+        console.error("Error", error);
+        return null;
+    }
+}
+
+/**
+ * Gets all the boxscores from the games being played today.
+ * @returns {array} The boxscores of all the games being played today.
+ */
+export async function getTodaysBoxes(){
+    try {
+        const today = new Date().toISOString().split('T')[0]
+        const resp = await axios.get("https://api-web.nhle.com/v1/schedule/now")
+        const data = resp.data
+        const games = data.gameWeek.find(day => day.date === today)
+        const boxes = []
+        console.log(games)
+        for(const game of games.games){
+            const box = await getBoxscore(game.id)
+            if(!box) continue
+            boxes.push(box)
+        }
+        return boxes
     } catch (error) {
         console.error("Error", error);
         return null;
@@ -37,9 +64,7 @@ export async function getGamesFromDate(date){
  * @returns {array} The gameIDs of all the games being played today.
  */
 async function getGameIDs(schedule){
-    return schedule.gameWeek
-        .flatMap(day => day.games)
-        .map(game => game.id)
+    return schedule.map(game => game.id)
 }
 
 /**
@@ -173,6 +198,8 @@ export async function insertGame(game,box){
     const homeScore = box?.homeTeam?.score ?? 0
     const awayScore = box?.awayTeam?.score ?? 0
 
+    const gameStatus = box?.gameState ?? "FUT"
+
     const gameNum = game.gameType
     let gameType = ""
 
@@ -191,19 +218,21 @@ export async function insertGame(game,box){
 
     await pool.query(
         `INSERT INTO ${gameType}
-        (gameid, time, hometeam, awayteam, homescore, awayscore)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        (gameid, time, hometeam, awayteam, homescore, awayscore, gamestatus)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         ON CONFLICT (gameid)
         DO UPDATE SET
         homescore = EXCLUDED.homescore,
-        awayscore = EXCLUDED.awayscore`,
+        awayscore = EXCLUDED.awayscore,
+        gamestatus = EXCLUDED.gamestatus`,
         [
             game.id,
             dateGame,
             homeTeam,
             awayTeam,
             homeScore,
-            awayScore
+            awayScore,
+            gameStatus
         ]
     )
 }
@@ -231,8 +260,8 @@ export async function importGameNoBox(game){
 
     await pool.query(
         `INSERT INTO ${gameType}
-        (gameid, time, hometeam, awayteam, homescore, awayscore)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        (gameid, time, hometeam, awayteam, homescore, awayscore, gamestatus)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         ON CONFLICT (gameid)
         DO UPDATE SET
         homescore = EXCLUDED.homescore,
@@ -243,7 +272,8 @@ export async function importGameNoBox(game){
             game.homeTeam,
             game.awayTeam,
             game.homeScore || 0,
-            game.awayScore || 0
+            game.awayScore || 0,
+            "FUT"
         ]
     )
 }
@@ -297,11 +327,58 @@ export async function getStandings(date = null){
     return res.data
 }
 
+/**
+ * Updates the SQL database with the live game data from today
+ * @returns {boolean} whether there are games going on or not
+ */
+export async function updateTodaysGames(){
+    const games = await getTodaysGames()
+    let gameType = ""
+    let liveGames = false
 
+    for(const game of games){
+        const box = await getBoxscore(game.id)
+        const dateGame = new Date(game.startTimeUTC)
+        if(!box) continue
 
+        const gameNum = game.gameType
 
+        if(box.gameState === "LIVE" || box.gameState === "CRIT"){
+            liveGames = true
+        }
+    
+        if(gameNum == 1){
+            gameType = "pre_games"
+        }
+        else if(gameNum == 2){
+            gameType = "reg_games"
+        }
+        else{
+            gameType = "post_games"
+        }
 
-
+        await pool.query(
+            `INSERT INTO ${gameType}
+            (gameid, time, hometeam, awayteam, homescore, awayscore, gamestatus)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            ON CONFLICT (gameid)
+            DO UPDATE SET
+            homescore = EXCLUDED.homescore,
+            awayscore = EXCLUDED.awayscore,
+            gamestatus = EXCLUDED.gamestatus`,
+            [
+                game.id,
+                dateGame,
+                box.homeTeam.abbrev,
+                box.awayTeam.abbrev,
+                box.homeTeam.score,
+                box.awayTeam.score,
+                box.gameState || "FUT"
+            ]
+        )
+    }
+    return liveGames
+}
 
 /**
  * Prints all of today's games, primarily used for testing
@@ -401,3 +478,10 @@ export async function getPastWeek(date){
     }
 }
 
+// const games = await getTodaysGames()
+// const pgames = games.gameWeek.flatMap(day => day.games)
+// console.log(games)
+
+//console.log(await getBoxscore("2025021285"))
+// const temp = (await getBoxscore("2025021285"))
+// console.log(temp)

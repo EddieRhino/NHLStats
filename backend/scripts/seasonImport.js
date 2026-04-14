@@ -14,7 +14,13 @@ async function importSeason(season){
         }))
     
     for(const game of mapGames){
-        importGameNoBox(game)
+        const box = await getBoxscore(game.id)
+        if(!box){
+            importGameNoBox(game)
+        }
+        else{
+            insertGame(game,box)
+        }
     }
 
 }

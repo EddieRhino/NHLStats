@@ -1,7 +1,7 @@
 import express from "express"
 const app = express()
 const PORT = 5000
-import {getGamesFromDate, getStandings, getTodaysGames} from "./nhl_app.js"
+import {getGamesFromDate, getStandings, getTodaysBoxes, getTodaysGames, updateTodaysGames} from "./nhl_app.js"
 import {insertGame} from "./nhl_app.js"
 import {getBoxscore} from "./nhl_app.js"
 import { pool } from "./db.js"
@@ -56,41 +56,28 @@ app.get("/api/skaters/:gameId", async(req,res) => {
 })
 
 app.get(["/api/games","/api/schedule"], async(req,res) => {
+    //Maybe implement later something that only goes to the API if games are active (current time > time of a game) otherwise just go to the database
     try{
-        const result_db = await pool.query(
-            `SELECT *
-            FROM reg_games
-            WHERE DATE(time) = CURRENT_DATE
-            order BY time ASC`
-        )
-        if(result_db.rows.length > 0){
-            return res.json(result_db.rows)
+        if(updateTodaysGames()){
+            return res.json({
+                islive: true,
+                games: await getTodaysBoxes()
+            })
         }
-        const games_now = await getTodaysGames()
-        if (games_now === null) return;
-
-        const today = new Date().toDateString()
-        const todaysGames = []
-
-        for(const day of games_now.gameWeek){
-            for(const game of day.games){
-                const gameDate = new Date(game.startTimeUTC).toDateString()
-                if(today != gameDate) continue
-                todaysGames.push(game)
-                const box = await getBoxscore(game.id)
-                if (!box) continue
-                await insertGame(game,box)
+        else{
+            const result_db = await pool.query(
+                `SELECT *
+                FROM reg_games
+                WHERE DATE(time) = CURRENT_DATE
+                order BY time ASC`
+            )
+            if(result_db.rows.length > 0){
+                return res.json(result_db.rows)
+            }
+            else{
+                return res.json([])
             }
         }
-
-        const result_db2 = await pool.query(
-            `SELECT *
-            FROM reg_games
-            WHERE DATE(time) = CURRENT_DATE
-            order BY time ASC`
-        )
-        
-        return res.json(result_db2.rows)
     }
     catch (err){
         console.error("bad fetch of todays games",err)

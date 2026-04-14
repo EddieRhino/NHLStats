@@ -1,11 +1,14 @@
-create table players(
-    playerid serial PRIMARY KEY,
-    apiid integer unique,
-    name text not null,
-    team text,
-    position text,
-    shoots VARCHAR(1),
-    height_cm INTEGER,
-    weight_lbs INTEGER,
-    birth_date DATE
-);
+-- create table players(
+--     playerid serial PRIMARY KEY,
+--     apiid integer unique,
+--     name text not null,
+--     team text,
+--     position text,
+--     shoots VARCHAR(1),
+--     height_cm INTEGER,
+--     weight_lbs INTEGER,
+--     birth_date DATE
+-- );
+
+-- alter table reg_games
+-- add column gamestatus text;
