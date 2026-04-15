@@ -49,8 +49,10 @@ export async function getTodaysBoxes(){
  */
 export async function getGamesFromDate(date){
     try {
-        const resp = await axios.get(`https://api-web.nhle.com/v1/schedule/${date}`);
-        return resp.data;
+        const resp = await axios.get(`https://api-web.nhle.com/v1/schedule/${date}`)
+        const data = resp.data
+        const games = data.gameWeek.find(day => day.date === date)
+        return games.games 
     } catch (error) {
         console.error("Error", error);
         return null;

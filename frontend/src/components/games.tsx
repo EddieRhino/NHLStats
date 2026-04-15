@@ -6,7 +6,7 @@ type Game = {
     awayteam: string,
     time: string,
     homescore: number,
-    awayscore: number?,
+    awayscore: number,
     gameState?: "PRE" | "LIVE" | "FINAL",
     period?: number,
     clock?: {
@@ -21,9 +21,9 @@ export default function TodaysGames(){
     const [isLive, setIsLive] = useState(false)
     const [loading, setLoading] = useState(true)
 
-    const getGameDisplay = (game: Game) => {
-        if(game.gameState === "FINAL")
-    }
+    // const getGameDisplay = (game: Game) => {
+    //     if(game.gameState === "FINAL")
+    // }
 
     useEffect (() => {
         const fetchGames = async () => {

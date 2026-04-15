@@ -1,5 +1,5 @@
 import cron from 'node-cron'
-import { getBoxscore, getGamesFromDate, importGameNoBox, insertGoalieStats, insertSkaterStats } from './nhl_app.js'
+import { getBoxscore, getGamesFromDate, importGameNoBox, insertGame, insertGoalieStats, insertSkaterStats } from './nhl_app.js'
 import { getTodaysGames } from './nhl_app.js'
 
 
@@ -8,7 +8,7 @@ import { getTodaysGames } from './nhl_app.js'
  * into the database at 9 AM every morning.
  */
 export function startCron(){
-    cron.schedule('0 9 * * *', async () => {
+    cron.schedule('* * * * *', async () => {
         console.log("running cron")
         let yesterday = new Date()
         yesterday.setDate(yesterday.getDate()-1)
@@ -16,35 +16,33 @@ export function startCron(){
         const sch = await getTodaysGames()
         const yestSch = await getGamesFromDate(yestISO)
 
-        const todGames = sch.gameWeek.flatMap(day =>
-            day.games.map(game => ({
-                id: game.id,
-                gameType: game.gameType,
-                startTimeUTC: game.startTimeUTC,
-                homeTeam: game.homeTeam.abbrev,
-                awayTeam: game.awayTeam.abbrev,
-                homeScore: game.homeTeam.score ?? 0,
-                awayScore: game.awayTeam.score ?? 0
-            }))
-        )
+        const todGames = sch.map(game => ({
+            id: game.id,
+            gameType: game.gameType,
+            startTimeUTC: game.startTimeUTC,
+            homeTeam: game.homeTeam.abbrev,
+            awayTeam: game.awayTeam.abbrev,
+            homeScore: game.homeTeam.score ?? 0,
+            awayScore: game.awayTeam.score ?? 0
+        }))
+
         for(const game of todGames){
             await importGameNoBox(game)
         }
-        const yestGames = yestSch.gameWeek.flatMap(day =>
-            day.games.map(game => ({
-                id: game.id,
-                gameType: game.gameType,
-                startTimeUTC: game.startTimeUTC,
-                homeTeam: game.homeTeam.abbrev,
-                awayTeam: game.awayTeam.abbrev,
-                homeScore: game.homeTeam.score ?? 0,
-                awayScore: game.awayTeam.score ?? 0
-            }))
-        )
+        const yestGames = yestSch.map(game => ({
+            id: game.id,
+            gameType: game.gameType,
+            startTimeUTC: game.startTimeUTC,
+            homeTeam: game.homeTeam.abbrev,
+            awayTeam: game.awayTeam.abbrev,
+            homeScore: game.homeTeam.score ?? 0,
+            awayScore: game.awayTeam.score ?? 0
+        }))
+                
         for(const game of yestGames){
-            await importGameNoBox(game)
-            const box = getBoxscore(game.id)
+            const box = await getBoxscore(game.id)
             if(!box) continue
+            await insertGame(game, box)
             await insertSkaterStats(game,box)
             await insertGoalieStats(game,box)
         }
