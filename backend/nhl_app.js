@@ -219,13 +219,13 @@ export async function insertGame(game,box){
 
     await pool.query(
         `INSERT INTO ${gameType}
-        (gameid, time, hometeam, awayteam, homescore, awayscore, gamestatus)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        ON CONFLICT (gameid)
-        DO UPDATE SET
-        homescore = EXCLUDED.homescore,
-        awayscore = EXCLUDED.awayscore,
-        gamestatus = EXCLUDED.gamestatus`,
+            (id, "startTimeUTC", "homeTeam", "awayTeam", "homeScore", "awayScore", "gameState")
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            ON CONFLICT (id)
+            DO UPDATE SET
+            "homeScore" = EXCLUDED."homeScore",
+            "awayScore" = EXCLUDED."awayScore",
+            "gameState" = EXCLUDED."gameState"`,
         [
             game.id,
             dateGame,
@@ -261,12 +261,12 @@ export async function importGameNoBox(game){
 
     await pool.query(
         `INSERT INTO ${gameType}
-        (gameid, time, hometeam, awayteam, homescore, awayscore, gamestatus)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        ON CONFLICT (gameid)
-        DO UPDATE SET
-        homescore = EXCLUDED.homescore,
-        awayscore = EXCLUDED.awayscore`,
+        (id, "startTimeUTC", "homeTeam", "awayTeam", "homeScore", "awayScore", "gameState")
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            ON CONFLICT (id)
+            DO UPDATE SET
+            "homeScore" = EXCLUDED."homeScore",
+            "awayScore" = EXCLUDED."awayScore"`,
         [
             game.id,
             dateGame,
@@ -360,13 +360,13 @@ export async function updateTodaysGames(){
 
         await pool.query(
             `INSERT INTO ${gameType}
-            (gameid, time, hometeam, awayteam, homescore, awayscore, gamestatus)
+            (id, "startTimeUTC", "homeTeam", "awayTeam", "homeScore", "awayScore", "gameState")
             VALUES ($1, $2, $3, $4, $5, $6, $7)
-            ON CONFLICT (gameid)
+            ON CONFLICT (id)
             DO UPDATE SET
-            homescore = EXCLUDED.homescore,
-            awayscore = EXCLUDED.awayscore,
-            gamestatus = EXCLUDED.gamestatus`,
+            "homeScore" = EXCLUDED."homeScore",
+            "awayScore" = EXCLUDED."awayScore",
+            "gameState" = EXCLUDED."gameState"`,
             [
                 game.id,
                 dateGame,
@@ -378,7 +378,7 @@ export async function updateTodaysGames(){
             ]
         )
     }
-    return false
+    return liveGames
 }
 
 /**

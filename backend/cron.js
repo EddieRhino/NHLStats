@@ -8,7 +8,7 @@ import { getTodaysGames } from './nhl_app.js'
  * into the database at 9 AM every morning.
  */
 export function startCron(){
-    cron.schedule('* * * * *', async () => {
+    cron.schedule('0 9 * * *', async () => {
         console.log("running cron")
         let yesterday = new Date()
         yesterday.setDate(yesterday.getDate()-1)

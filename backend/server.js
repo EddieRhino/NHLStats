@@ -59,7 +59,7 @@ app.get(["/api/games","/api/schedule"], async(req,res) => {
     //Maybe implement later something that only goes to the API if games are active (current time > time of a game) otherwise just go to the database
     try{
         const live = await updateTodaysGames()
-        if(live){
+        if(!live){
             return res.json({
                 islive: true,
                 games: await getTodaysBoxes()
@@ -159,4 +159,16 @@ app.get(["/api/stats","/api/leaders"], async (req, res) => {
         res.status(500).json({ error: "Failed to get stats" })
     }
 })
+
+app.get("/api/boxscore/:gameid", async (req, res) => {
+    try{
+        const id = parseInt(req.params.gameid)
+        const data = await getBoxscore(id)
+        res.json(data)
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({ error: "Failed to fetch boxscore" })
+      }
+})
+
 startCron()
