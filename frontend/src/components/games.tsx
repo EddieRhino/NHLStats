@@ -16,13 +16,22 @@ type Game = {
     startTimeUTC: string,
     gameState: "PRE" | "LIVE" | "FINAL" | "CRIT" | "OFF" | "FUT",
     periodDescriptor?: {
-        number: number,
-        periodType: string
+        number?: number,
+        periodType?: string,
+        otPeriods?: number
     },
     clock?: {
         timeRemaining?: string,
         running?: boolean,
         intermission?: boolean
+    }
+    seriesStatus?: {
+        topSeedTeamAbbrev?: string,
+        topSeedWins?: number,
+        bottomSeedTeamAbbrev?: string,
+        bottomSeedWins?: number,
+        gameNumberOfSeries?: number,
+        round?: number
     }
 }
 

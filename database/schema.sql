@@ -12,3 +12,13 @@
 
 -- alter table reg_games
 -- add column gamestatus text;
+
+-- create table pre_games(
+--     id bigint not null primary key,
+--     "startTimeUTC" timestamp,
+--     "homeTeam" varchar(255),
+--     "awayTeam" varchar(255),
+--     "homeScore" integer,
+--     "awayScore" integer,
+--     "gameState" text
+-- );
