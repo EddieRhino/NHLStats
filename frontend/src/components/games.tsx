@@ -3,13 +3,22 @@ import axios from "axios"
 
 type Game = {
     id: number,
-    homeTeam: string,
-    awayTeam: string,
+    homeTeam: {
+        abbrev: string,
+        score: number,
+        logo?: string
+    }
+    awayTeam: {
+        abbrev: string,
+        score: number,
+        logo?: string
+    }
     startTimeUTC: string,
-    homeScore: number,
-    awayScore: number,
     gameState: "PRE" | "LIVE" | "FINAL" | "CRIT" | "OFF" | "FUT",
-    period?: number,
+    periodDescriptor?: {
+        number: number,
+        periodType: string
+    },
     clock?: {
         timeRemaining?: string,
         running?: boolean,
@@ -25,7 +34,12 @@ export default function TodaysGames(){
         switch (game.gameState){
             case "LIVE":
             case "CRIT":
-                return `P${game.period} | ${game.clock?.timeRemaining}`
+                if(game.clock?.intermission){
+                    return `End of Period ${game.periodDescriptor?.number}`
+                }
+                else{
+                    return `P${game.periodDescriptor?.number} | ${game.clock?.timeRemaining}`
+                }
             
             case "FINAL":
             case "OFF":
@@ -46,7 +60,6 @@ export default function TodaysGames(){
         try{
             const res = await axios.get("http://localhost:5000/api/games")
             const data = res.data
-            console.log(data)
             setGames(data.games || [])
         } catch (err) {
             console.error(err);
@@ -80,10 +93,10 @@ export default function TodaysGames(){
             {games.map((game, i) => (
             <div key={i}>
                 <div>
-                {game.awayTeam} {game.awayScore} - {game.homeTeam} {game.homeScore} {game.gameState}
+                {game.awayTeam.abbrev} {game.awayTeam.score} - {game.homeTeam.abbrev} {game.homeTeam.score}
                 {" | "}
                 {getGameDisplay(game)}
-                {(game.gameState === "LIVE" || game.gameState === "CRIT" || game.gameState === "FUT") && (
+                {(game.gameState === "LIVE" || game.gameState === "CRIT" || game.gameState === "FINAL" || game.gameState === "OFF") && (
                     <button
                         onClick={() => console.log("boxscore for ", game.id)}
                     >

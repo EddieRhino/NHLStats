@@ -25,7 +25,7 @@ export async function getTodaysGames() {
  */
 export async function getTodaysBoxes(){
     try {
-        const today = new Date().toISOString().split('T')[0]
+        const today = new Date().toLocaleDateString('en-CA')
         const resp = await axios.get("https://api-web.nhle.com/v1/schedule/now")
         const data = resp.data
         const games = data.gameWeek.find(day => day.date === today)

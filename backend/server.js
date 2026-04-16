@@ -73,9 +73,22 @@ app.get(["/api/games","/api/schedule"], async(req,res) => {
                 order BY time ASC`
             )
             if(result_db.rows.length > 0){
+                const games = result_db.map(game => ({
+                    id: game.id,
+                    homeTeam: {
+                        abbrev: game.homeTeam,
+                        score: game.homeScore ?? 0
+                    },
+                    awayTeam: {
+                        abbrev: game.awayTeam,
+                        score: game.awayScore ?? 0
+                    },
+                    startTimeUTC: game.startTimeUTC,
+                    gameState: game.gameState
+                }))
                 return res.json({
                     islive: false,
-                    games: result_db.rows
+                    games: games
                 })
             }
             else{
