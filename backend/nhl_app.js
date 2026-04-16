@@ -216,26 +216,54 @@ export async function insertGame(game,box){
     //console.log(game)
     const dateGame = new Date(game.startTimeUTC)
     //console.log(dateGame)
-
-    await pool.query(
-        `INSERT INTO ${gameType}
-            (id, "startTimeUTC", "homeTeam", "awayTeam", "homeScore", "awayScore", "gameState")
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            ON CONFLICT (id)
-            DO UPDATE SET
-            "homeScore" = EXCLUDED."homeScore",
-            "awayScore" = EXCLUDED."awayScore",
-            "gameState" = EXCLUDED."gameState"`,
-        [
-            game.id,
-            dateGame,
-            homeTeam,
-            awayTeam,
-            homeScore,
-            awayScore,
-            gameStatus
-        ]
-    )
+    if(gameType !== "post_games"){
+        await pool.query(
+            `INSERT INTO ${gameType}
+                (id, "startTimeUTC", "homeTeam", "awayTeam", "homeScore", "awayScore", "gameState")
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                ON CONFLICT (id)
+                DO UPDATE SET
+                "homeScore" = EXCLUDED."homeScore",
+                "awayScore" = EXCLUDED."awayScore",
+                "gameState" = EXCLUDED."gameState"`,
+            [
+                game.id,
+                dateGame,
+                homeTeam,
+                awayTeam,
+                homeScore,
+                awayScore,
+                gameStatus
+            ]
+        )
+    }
+    else{
+        await pool.query(
+            `INSERT INTO post_games
+                (id, "startTimeUTC", "homeTeam", "awayTeam", "homeScore", "awayScore", "gameState", round, gamenumber, topseedwins, bottomseedwins)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                ON CONFLICT (id)
+                DO UPDATE SET
+                "homeScore" = EXCLUDED."homeScore",
+                "awayScore" = EXCLUDED."awayScore",
+                "gameState" = EXCLUDED."gameState",
+                topseedwins = EXCLUDED.topseedwins,
+                bottomseedwins = EXCLUDED.bottomseedwins`,
+            [
+                game.id,
+                dateGame,
+                homeTeam,
+                awayTeam,
+                homeScore,
+                awayScore,
+                gameStatus,
+                game.seriesStatus.round,
+                game.seriesStatus.gameNumberOfSeries,
+                game.seriesStatus.topSeedWins,
+                game.seriesStatus.bottomSeedWins
+            ]
+        )
+    }
 }
 
 /**
@@ -334,49 +362,16 @@ export async function getStandings(date = null){
  */
 export async function updateTodaysGames(){
     const games = await getTodaysGames()
-    let gameType = ""
     let liveGames = false
 
     for(const game of games){
         const box = await getBoxscore(game.id)
-        const dateGame = new Date(game.startTimeUTC)
         if(!box) continue
 
-        const gameNum = game.gameType
-
-        if(box.gameState === "LIVE" || box.gameState === "CRIT"){
+        if(box.gameState === "LIVE" || box.gameState === "CRIT" || box.gameState === "FINAL"){
             liveGames = true
         }
-    
-        if(gameNum == 1){
-            gameType = "pre_games"
-        }
-        else if(gameNum == 2){
-            gameType = "reg_games"
-        }
-        else{
-            gameType = "post_games"
-        }
-
-        await pool.query(
-            `INSERT INTO ${gameType}
-            (id, "startTimeUTC", "homeTeam", "awayTeam", "homeScore", "awayScore", "gameState")
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            ON CONFLICT (id)
-            DO UPDATE SET
-            "homeScore" = EXCLUDED."homeScore",
-            "awayScore" = EXCLUDED."awayScore",
-            "gameState" = EXCLUDED."gameState"`,
-            [
-                game.id,
-                dateGame,
-                box.homeTeam.abbrev,
-                box.awayTeam.abbrev,
-                box.homeTeam.score,
-                box.awayTeam.score,
-                box.gameState || "FUT"
-            ]
-        )
+        insertGame(game, box)
     }
     return liveGames
 }
@@ -476,6 +471,35 @@ export async function getPastWeek(date){
         console.error(err.response?.data)
         console.error(err.message)
         return null;
+    }
+}
+
+/**
+ * Updates the DB with yesterday's results
+ */
+export async function updateYesterdayGames(){
+    let yesterday = new Date()
+    yesterday.setDate(yesterday.getDate()-1)
+    const yestISO = yesterday.toLocaleDateString('en-CA')
+    const yestSch = await getGamesFromDate(yestISO)
+
+    const yestGames = yestSch.map(game => ({
+        id: game.id,
+        gameType: game.gameType,
+        startTimeUTC: game.startTimeUTC,
+        homeTeam: game.homeTeam.abbrev,
+        awayTeam: game.awayTeam.abbrev,
+        homeScore: game.homeTeam.score ?? 0,
+        awayScore: game.awayTeam.score ?? 0,
+        gameState: game.gameState
+    }))
+            
+    for(const game of yestGames){
+        const box = await getBoxscore(game.id)
+        if(!box) continue
+        await insertGame(game, box)
+        await insertSkaterStats(game,box)
+        await insertGoalieStats(game,box)
     }
 }
 

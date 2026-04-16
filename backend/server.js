@@ -59,7 +59,8 @@ app.get(["/api/games","/api/schedule"], async(req,res) => {
     //Maybe implement later something that only goes to the API if games are active (current time > time of a game) otherwise just go to the database
     try{
         const live = await updateTodaysGames()
-        if(!live){
+        console.log(live)
+        if(live){
             return res.json({
                 islive: true,
                 games: await getTodaysBoxes()
@@ -69,11 +70,11 @@ app.get(["/api/games","/api/schedule"], async(req,res) => {
             const result_db = await pool.query(
                 `SELECT *
                 FROM reg_games
-                WHERE DATE(time) = CURRENT_DATE
-                order BY time ASC`
+                WHERE DATE("startTimeUTC") = CURRENT_DATE
+                order BY "startTimeUTC" ASC`
             )
             if(result_db.rows.length > 0){
-                const games = result_db.map(game => ({
+                const games = result_db.rows.map(game => ({
                     id: game.id,
                     homeTeam: {
                         abbrev: game.homeTeam,
@@ -114,7 +115,7 @@ app.get(["/api/games/:date","/api/schedule/:date"], async(req,res) => {
             return res.json(result_db.rows)
         }
         const games_now = await getGamesFromDate(date)
-        console.log(games_now)
+        //console.log(games_now)
         if (games_now === null) return;
 
         // const games = []
@@ -128,17 +129,6 @@ app.get(["/api/games/:date","/api/schedule/:date"], async(req,res) => {
                 await insertGame(game, box)
             }
         }
-
-        // for(const day of games_now.gameWeek){
-        //     for(const game of day.games){
-        //         const gameDate = new Date(game.startTimeUTC)
-        //         if(date != gameDate.toISOString().split('T')[0]) continue
-        //         games.push(game)
-        //         const box = await getBoxscore(game.id)
-        //         if (!box) continue
-        //         await insertGame(game,box)
-        //     }
-        // }
         return res.json(games_now)
     }
     catch (err){
