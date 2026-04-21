@@ -1,4 +1,5 @@
 import {useEffect, useState} from "react"
+import Boxscore from "./boxscore"
 import axios from "axios"
 
 type Game = {
@@ -107,7 +108,7 @@ export default function TodaysGames(){
                 {getGameDisplay(game)}
                 {(game.gameState === "LIVE" || game.gameState === "CRIT" || game.gameState === "FINAL" || game.gameState === "OFF") && (
                     <button
-                        onClick={() => console.log("boxscore for ", game.id)}
+                        onClick={() => fetchBoxscore(game.id)}
                     >
                         BOX
                     </button>

@@ -30,7 +30,7 @@ type Goalie = {
 export default function Boxscore(){
     const [stats, setStats] = useState<teamStats[]>([])
     const [loading, setLoading] = useState(true)
-    const fetchBoxscore = async (id) => {
+    const fetchBoxscore = async (id: number) => {
         try{
             const res = await axios.get(`http://localhost:5000/api/boxscore/${id}`)
             const data = res.data
@@ -41,4 +41,14 @@ export default function Boxscore(){
             setLoading(false)
         }
     }
+    useEffect (() => {
+        fetchBoxscore()
+    },[])
+    return (
+        <div>
+          <h2>Boxscore</h2>
+          {stats.awayTeam.abbrev} {stats.awayTeam.score} -{" "}
+          {boxscore.homeTeam.abbrev} {boxscore.homeTeam.score}
+        </div>
+      );
 }
